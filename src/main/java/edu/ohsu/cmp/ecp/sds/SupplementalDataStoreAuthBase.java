@@ -76,7 +76,7 @@ public abstract class SupplementalDataStoreAuthBase implements SupplementalDataS
 		if (null == contextPatient)
 			return null;
 
-		IIdType contextPatientId = idFromSubject(contextPatient.toString());
+		IIdType contextPatientId = idFromContextParameter( "Patient", contextPatient.toString());
 
 		return new LaunchContext() {
 
@@ -89,4 +89,7 @@ public abstract class SupplementalDataStoreAuthBase implements SupplementalDataS
 	}
 
 	protected abstract IIdType idFromSubject( String subject ) ;
+
+	protected abstract IIdType idFromContextParameter( String resourceType, String contextParameterValue ) ;
+
 }
