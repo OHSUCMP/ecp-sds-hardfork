@@ -26,7 +26,7 @@ public final class UserIdentity {
 		this.basisUserId = Objects.requireNonNull( basisUserId, "cannot build UserIdentity without basisUserId" );
 		this.localUserId = localUserId;
 		this.nonLocalUserIds.addAll(nonLocalUserIds) ;
-		this.userResourceType = basisUserId.getResourceType();
+		this.userResourceType = Objects.requireNonNull( basisUserId.getResourceType(), "cannot build UserIdentity when basisUserId is missing the resource type (\"" + basisUserId + "\")" );
 		localUserId.ifPresent( this::requireMatchingIdType );
 		nonLocalUserIds.forEach( this::requireMatchingIdType );
 	}
