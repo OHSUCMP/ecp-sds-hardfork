@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import ca.uhn.fhir.rest.api.MethodOutcome;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.util.BundleBuilder;
 
@@ -88,10 +89,11 @@ public class ForeignPartitionTest extends BaseSuppplementalDataStoreTest {
 		IGenericClient client = clientTargetingPartition( FOREIGN_PARTITION_NAME );
 		
 		Patient pat = initPatient( "0123456789" ) ;
-		IIdType patId = client.update().resource(pat).execute().getId();
+		client.update().resource(pat).execute();
 		
-		Condition condition = initCondition( patId, "0123456789-001" ) ;
-		IIdType conditionId = client.create().resource(condition).execute().getId();
+		Condition condition = initCondition( pat.getIdElement(), "0123456789-001" ) ;
+		condition.setId( new IdType( "Condition", createTestSpecificId() ) ) ;
+		IIdType conditionId = client.update().resource(condition).execute().getId();
 		
 		Condition readCondition = client.read().resource(Condition.class).withId(conditionId).execute();
 		

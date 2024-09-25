@@ -17,7 +17,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import ca.uhn.fhir.interceptor.model.RequestPartitionId;
 import ca.uhn.fhir.jpa.dao.data.IPartitionDao;
 import ca.uhn.fhir.jpa.entity.PartitionEntity;
-import ca.uhn.fhir.jpa.model.entity.ModelConfig;
+import ca.uhn.fhir.jpa.model.entity.StorageSettings;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 
 @Component
@@ -30,7 +30,7 @@ public class SupplementalDataStorePartition {
 	IPartitionDao daoPartition;
 
 	@Inject
-	ModelConfig modelConfig ;
+	StorageSettings storageSettings;
 	
     @Inject
     @Named("transactionManager")
@@ -63,7 +63,7 @@ public class SupplementalDataStorePartition {
 			return true ;
 		if ( sdsProperties.getPartition().getLocalName().equals( userId.getBaseUrl() ) )
 			return true ;
-		if ( modelConfig.getTreatBaseUrlsAsLocal().contains( userId.getBaseUrl() ) )
+		if ( storageSettings.getTreatBaseUrlsAsLocal().contains( userId.getBaseUrl() ) )
 			return true ;
 		return false ;
 	}

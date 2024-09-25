@@ -27,7 +27,7 @@ public abstract class SupplementalDataStoreAuthBase implements SupplementalDataS
 		String authorizedResourceType = authorizedUserId.getResourceType();
 		
 		if ( "Practitioner".equalsIgnoreCase(authorizedResourceType) )
-			return SupplementalDataStoreAuthProfile.forPractitioner( authorizedUserId ) ;
+			return SupplementalDataStoreAuthProfile.forPractitioner( authorizedUserId, launchContextFromAuthentication(authentication) ) ;
 
 		if ( "Patient".equalsIgnoreCase(authorizedResourceType) )
 			return SupplementalDataStoreAuthProfile.forPatient( authorizedUserId ) ;
@@ -40,8 +40,7 @@ public abstract class SupplementalDataStoreAuthBase implements SupplementalDataS
 		throw new AuthenticationException(Msg.code(644) + "Principal \"" + authorizedUserId + "\" Not Authorized For Any Patient");
 
 	}
-	
-	private IIdType authorizedUserIdFromAuthentication(Authentication authentication) {
+	private OAuth2AuthenticatedPrincipal oauth2PrincipalFromAuthentication(Authentication authentication) {
 		if (null == authentication)
 			throw new AuthenticationException(Msg.code(644) + "Missing or Invalid Authorization");
 
@@ -53,12 +52,63 @@ public abstract class SupplementalDataStoreAuthBase implements SupplementalDataS
 			return null;
 
 		OAuth2AuthenticatedPrincipal oauth2Principal = (OAuth2AuthenticatedPrincipal) authentication.getPrincipal();
+		return oauth2Principal ;
+	}
+
+	private IIdType authorizedUserIdFromAuthentication(Authentication authentication) {
+		OAuth2AuthenticatedPrincipal oauth2Principal = oauth2PrincipalFromAuthentication(authentication);
+		return authorizedUserIdFromOAuth2Principal( oauth2Principal );
+	}
+
+	private IIdType authorizedUserIdFromOAuth2Principal( OAuth2AuthenticatedPrincipal oauth2Principal ) {
+		if ( null == oauth2Principal )
+			return null ;
+
 		Object subject = oauth2Principal.getAttribute("sub");
 		if (null == subject)
 			throw new AuthenticationException(Msg.code(644) + "Missing or Invalid Subject");
 
 		return idFromSubject(subject.toString());
 	}
-	
+
+	private LaunchContext launchContextFromAuthentication(Authentication authentication) {
+		OAuth2AuthenticatedPrincipal oauth2Principal = oauth2PrincipalFromAuthentication(authentication);
+		if ( null == oauth2Principal )
+			return null ;
+
+		Object contextPatient = oauth2Principal.getAttribute("patient");
+		if (null == contextPatient)
+			return null;
+
+
+		IIdType contextPatientId = idFromContextParameter( contextPatient.toString() ).withResourceType( "Patient" ) ;
+		IIdType fullyQualifiedContextPatientId = fullyQualifiedContextPatientId( contextPatientId, oauth2Principal );
+
+		return new LaunchContext() {
+
+			@Override
+			public IIdType getPatient() {
+				return fullyQualifiedContextPatientId;
+			}
+
+		};
+	}
+
+	private IIdType fullyQualifiedContextPatientId( IIdType contextPatientId, OAuth2AuthenticatedPrincipal oauth2Principal ) {
+		if ( contextPatientId.hasBaseUrl() )
+			return contextPatientId ;
+
+		IIdType authorizedUserId = authorizedUserIdFromOAuth2Principal( oauth2Principal );
+		if ( null == authorizedUserId )
+			throw new AuthenticationException(Msg.code(644) + "Launch Context Patient \"" + contextPatientId + "\" is missing required base url, but no authorized user id is available to provide one");
+		if ( !authorizedUserId.hasBaseUrl() )
+			throw new AuthenticationException(Msg.code(644) + "Launch Context Patient \"" + contextPatientId + "\" is missing required base url, but authorized user id \"" + authorizedUserId + "\" does not provide one");
+
+		return contextPatientId.withServerBase( authorizedUserId.getBaseUrl(), contextPatientId.getResourceType() ) ;
+	}
+
 	protected abstract IIdType idFromSubject( String subject ) ;
+
+	protected abstract IIdType idFromContextParameter( String contextParameterValue ) ;
+
 }

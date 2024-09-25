@@ -13,10 +13,16 @@ public interface SupplementalDataStoreAuth {
 
 	void addAuthCapability(IBaseConformance theCapabilityStatement, URI authorizeUri, URI tokenUri );
 
+	public interface LaunchContext {
+		IIdType getPatient() ;
+	}
+
 	public interface AuthorizationProfile {
 
 		IIdType getAuthorizedUserId() ;
 		IIdType getTargetPatientId() ;
+
+		LaunchContext getLaunchContext() ;
 
 	}
 

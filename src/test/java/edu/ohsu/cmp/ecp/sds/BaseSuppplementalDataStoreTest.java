@@ -2,13 +2,24 @@ package edu.ohsu.cmp.ecp.sds;
 
 import static java.util.stream.Collectors.toList;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 
+import junit.framework.AssertionFailedError;
+
+import org.apache.http.HttpHost;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.instance.model.api.IIdType;
 import org.hl7.fhir.r4.model.Bundle;
@@ -24,11 +35,13 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.ActiveProfiles;
 
 import ca.uhn.fhir.context.FhirContext;
-import ca.uhn.fhir.jpa.model.entity.ModelConfig;
+import ca.uhn.fhir.jpa.model.entity.StorageSettings;
 import ca.uhn.fhir.jpa.starter.Application;
 import ca.uhn.fhir.jpa.starter.JpaStarterWebsocketDispatcherConfig;
 import ca.uhn.fhir.parser.IParser;
+import ca.uhn.fhir.rest.client.apache.ApacheRestfulClientFactory;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
+import ca.uhn.fhir.rest.client.api.IRestfulClientFactory;
 import ca.uhn.fhir.rest.client.api.ServerValidationModeEnum;
 import ca.uhn.fhir.rest.client.interceptor.BearerTokenAuthInterceptor;
 import ca.uhn.fhir.util.BundleBuilder;
@@ -55,7 +68,7 @@ public abstract class BaseSuppplementalDataStoreTest {
 	private SupplementalDataStoreProperties sdsProperties ;
 
 	@Autowired
-	private ModelConfig myModelConfig;
+	private StorageSettings myStorageSettings;
 
 	private String ourServerBase;
 	private FhirContext ctx;
@@ -71,9 +84,9 @@ public abstract class BaseSuppplementalDataStoreTest {
 		ctx.getRestfulClientFactory().setSocketTimeout(1200 * 1000);
 		ourServerBase = "http://localhost:" + port + "/fhir/";
 
-		Set<String> baseUrls = new HashSet<>( myModelConfig.getTreatBaseUrlsAsLocal() ) ;
+		Set<String> baseUrls = new HashSet<>( myStorageSettings.getTreatBaseUrlsAsLocal() ) ;
 		baseUrls.add( ourServerBase ) ;
-		myModelConfig.setTreatBaseUrlsAsLocal( baseUrls ) ;
+		myStorageSettings.setTreatBaseUrlsAsLocal( baseUrls ) ;
 	}
 
 	protected String fhirServerlBase() {
@@ -82,7 +95,7 @@ public abstract class BaseSuppplementalDataStoreTest {
 
 	private int testSpecificIdCount ;
 	private String testSpecificIdBase ;
-	
+
 	protected String createTestSpecificId() {
 		return String.format( "%1$s-%2$03d", testSpecificIdBase, testSpecificIdCount++ ) ;
 	}
@@ -99,7 +112,40 @@ public abstract class BaseSuppplementalDataStoreTest {
 				testNameHashCode
 			) ;
 	}
-	
+
+	protected <T extends HttpUriRequest> HttpResponse executeRequest( Function<URI,T> requestFactory, String relativePath ) {
+		return executeRequest( requestFactory, URI.create(relativePath) ) ;
+	}
+
+	protected <T extends HttpUriRequest> HttpResponse executeRequest( Function<URI,T> requestFactory, String relativePath, Function<T,T> configurer ) {
+		return executeRequest( requestFactory, URI.create(relativePath), configurer ) ;
+	}
+
+	protected <T extends HttpUriRequest> HttpResponse executeRequest( Function<URI,T> requestFactory, URI relativeUri ) {
+		return executeRequest( requestFactory, relativeUri,  q -> q ) ;
+	}
+
+	protected <T extends HttpUriRequest> HttpResponse executeRequest( Function<URI,T> requestFactory, URI relativeUri, Function<T,T> configurer ) {
+		URI baseUri = URI.create(ourServerBase) ;
+		URI uri = baseUri.resolve( relativeUri ) ;
+		T request = requestFactory.apply( uri ) ;
+		T configuredRequest = configurer.apply( request ) ;
+		try {
+			HttpResponse response = nativeHttpClient().execute( configuredRequest );
+			return response ;
+		} catch (IOException ex) {
+			throw new AssertionFailedError( "request failed: " + configuredRequest.getMethod() + " " + configuredRequest.getURI() + "\n" + ex.getMessage() ) ;
+		}
+	}
+
+	private HttpClient nativeHttpClient() {
+		IRestfulClientFactory restfulClientFactory = ctx.getRestfulClientFactory();
+		if ( !(restfulClientFactory instanceof ApacheRestfulClientFactory) )
+			throw new AssertionFailedError() ;
+		ApacheRestfulClientFactory apacheRestfulClientFactory = (ApacheRestfulClientFactory)restfulClientFactory ;
+		return apacheRestfulClientFactory.getNativeHttpClient() ;
+	}
+
 	protected IGenericClient client() { return ctx.newRestfulGenericClient(ourServerBase) ; }
 	
 	protected IGenericClient clientTargetingPartition( String partitionName ) {

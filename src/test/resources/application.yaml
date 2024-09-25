@@ -75,9 +75,10 @@ hapi:
     #      swiss:
     #        name: swiss.mednet.fhir
     #        version: 0.8.0
+    #        reloadExisting : false
     #      example not from registry
     #      ips_1_0_0:
-    #        url: https://build.fhir.org/ig/HL7/fhir-ips/package.tgz
+    #        packageUrl: https://build.fhir.org/ig/HL7/fhir-ips/package.tgz
     #        name: hl7.fhir.uv.ips
     #        version: 1.0.0
     #    supported_resource_types:
@@ -121,11 +122,11 @@ hapi:
     #    partitioning:
     #      allow_references_across_partitions: false
     #      partitioning_include_in_search_hashes: false
-    #cors:
-    #  allow_Credentials: true
+    cors:
+      allow_Credentials: true
       # These are allowed_origin patterns, see: https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/cors/CorsConfiguration.html#setAllowedOriginPatterns-java.util.List-
-    #  allowed_origin:
-    #    - '*'
+      allowed_origin:
+        - '*'
 
     # Search coordinator thread pool sizes
     search-coord-core-pool-size: 20

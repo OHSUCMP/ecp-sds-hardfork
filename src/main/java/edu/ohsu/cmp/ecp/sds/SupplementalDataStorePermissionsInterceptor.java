@@ -14,6 +14,7 @@ import ca.uhn.fhir.interceptor.api.Interceptor;
 import ca.uhn.fhir.interceptor.api.Pointcut;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 import edu.ohsu.cmp.ecp.sds.SupplementalDataStoreAuth.AuthorizationProfile;
+import edu.ohsu.cmp.ecp.sds.SupplementalDataStoreAuth.LaunchContext;
 import edu.ohsu.cmp.ecp.sds.base.FhirResourceComparison;
 
 @Interceptor
@@ -61,7 +62,7 @@ public class SupplementalDataStorePermissionsInterceptor {
 		if ( "Practitioner".equalsIgnoreCase( authorizedUserId.getResourceType() ) ) {
 			theRequestDetails.setAttribute(
 				REQUEST_ATTR_PERMISSIONS,
-				permissionsForPractitioner( authorizedUserId )
+				permissionsForPractitioner( authorizedUserId, authProfile.getLaunchContext() )
 			);
 		} else {
 			theRequestDetails.setAttribute(
@@ -94,8 +95,22 @@ public class SupplementalDataStorePermissionsInterceptor {
 		return new UserIdentity(basisUserId, localUserId, nonLocalPatientIds) ;
 	}
 
-	private Permissions permissionsForPractitioner( IIdType authorizedUserId ) {
+	private Permissions permissionsForPractitioner( IIdType authorizedUserId, LaunchContext launchContext ) {
+		if ( null != launchContext && null != launchContext.getPatient() ) {
+			return permissionsForPractitionerInPatientContext(authorizedUserId, launchContext.getPatient()) ;
+		} else {
+			return permissionsForPractitionerWithoutContext( authorizedUserId ) ;
+		}
+	}
+
+	private Permissions permissionsForPractitionerWithoutContext( IIdType authorizedUserId ) {
 		return new Permissions( new Permissions.ReadAllPatients(authorizedUserId) ) ;
+	}
+
+	private Permissions permissionsForPractitionerInPatientContext( IIdType authorizedUserId, IIdType launchPatientContext ) {
+		UserIdentity contextPatientId = buildUserIdentity( launchPatientContext );
+
+		return new Permissions( new Permissions.ReadSpecificPatient(authorizedUserId, contextPatientId ) ) ;
 	}
 
 	private Permissions permissionsForPatient( IIdType authorizedUserId, IIdType authorizedPatientId, RequestDetails theRequestDetails ) {

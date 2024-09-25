@@ -30,6 +30,11 @@ public class SupplementalDataStoreAuthR4B extends SupplementalDataStoreAuthBase 
 	}
 
 	@Override
+	protected IIdType idFromContextParameter( String contextParameterValue ) {
+		return new IdType(contextParameterValue.toString());
+	}
+
+	@Override
 	public void addAuthCapability(IBaseConformance theCapabilityStatement, URI authorizeUri, URI tokenUri ) {
 		CapabilityStatement cs = (CapabilityStatement) theCapabilityStatement;
 		

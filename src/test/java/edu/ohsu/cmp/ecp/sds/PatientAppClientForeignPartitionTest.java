@@ -93,6 +93,8 @@ public class PatientAppClientForeignPartitionTest extends BaseSuppplementalDataS
 
 	private Condition createHealthConcern( Reference subjectRef, String codeAsPlainText ) {
 		Condition condition  = new Condition() ;
+		condition.setId( new IdType("Condition", createTestSpecificId()) ) ;
+
 		condition.setSubject( subjectRef ) ;
 		
 		CodeableConcept healthConcernCategory = new CodeableConcept();
@@ -110,11 +112,11 @@ public class PatientAppClientForeignPartitionTest extends BaseSuppplementalDataS
 		Patient subjectPatient = new Patient() ;
 		subjectPatient.setId( new IdType( "Patient", subjectPatientId ) ) ;
 		
-		IIdType claimedPatientId = patientAppClient.update().resource(subjectPatient).execute().getId();
+		patientAppClient.update().resource(subjectPatient).execute();
 		
-		Condition condition  = createHealthConcern( new Reference(claimedPatientId), "my health concern" ) ;
+		Condition condition  = createHealthConcern( new Reference( subjectPatient.getIdElement() ), "my health concern" ) ;
 		
-		IIdType conditionId = patientAppClient.create().resource(condition).execute().getId();
+		IIdType conditionId = patientAppClient.update().resource(condition).execute().getId();
 		
 		Condition readQuestResp = patientAppClient.read().resource(Condition.class).withId(conditionId).execute();
 		
