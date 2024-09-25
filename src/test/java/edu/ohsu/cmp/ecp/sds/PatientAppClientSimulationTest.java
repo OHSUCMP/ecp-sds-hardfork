@@ -112,6 +112,32 @@ public class PatientAppClientSimulationTest extends BaseSuppplementalDataStoreTe
 		assertThat( linkages, hasSize(1) ) ;
 	}
 
+	@Test
+	void canShareMultipleForeignPartitions() {
+
+		/* store local patient */
+		localPartition.operations().patient().create() ;
+
+		/* store foreign partition 1 */
+		foreignPartition1.operations().patient().create() ;
+
+		List<Runnable> resourceTasks1 = partitionResourceCreationTasks( foreignPartition1.operations() ) ;
+		resourceTasks1.forEach( Runnable::run ) ;
+
+		foreignPartition1.assertClaimed() ;
+		List<Linkage> linkages1 = foreignPartition1.linkages().assertPresent() ;
+		assertThat( linkages1, hasSize(1) ) ;
+
+		/* store foreign partition 2 */
+		foreignPartition2.operations().patient().create() ;
+
+		List<Runnable> resourceTasks2 = partitionResourceCreationTasks( foreignPartition2.operations() ) ;
+		resourceTasks2.forEach( Runnable::run ) ;
+		foreignPartition2.assertClaimed() ;
+		List<Linkage> linkages2 = foreignPartition2.linkages().assertPresent() ;
+		assertThat( linkages2, hasSize(1) ) ;
+	}
+
 	private List<Runnable> partitionResourceCreationTasks(SdsPartitionOperations ops) {
 		List<Runnable> resourceTasks = new ArrayList<>() ;
 		for ( int i = 0 ; i < 10 ; ++i ) {

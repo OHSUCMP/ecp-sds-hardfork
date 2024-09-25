@@ -31,8 +31,8 @@ public class SupplementalDataStoreAuthDstu2 extends SupplementalDataStoreAuthBas
 	}
 
 	@Override
-	protected IIdType idFromContextParameter( String resourceType, String contextParameterValue ) {
-		return new IdType(contextParameterValue.toString()).withResourceType(resourceType);
+	protected IIdType idFromContextParameter( String contextParameterValue ) {
+		return new IdType(contextParameterValue.toString());
 	}
 
 	@Override

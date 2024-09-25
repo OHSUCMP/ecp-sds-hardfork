@@ -11,6 +11,7 @@ import java.util.function.Supplier;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.instance.model.api.IIdType;
 import org.hl7.fhir.r4.model.Patient;
+import org.opentest4j.AssertionFailedError;
 
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.server.exceptions.ResourceGoneException;
@@ -45,6 +46,9 @@ public class PartitionAssertions {
 	}
 	
 	public void assertUnclaimed() {
+		if ( !sdsPartitionOps.id().value().isPresent() ) {
+			throw new AssertionFailedError("assertUnclaimed() requires a patient id; try using '.create(...)' or .id().update(...)' first");
+		}
 		assertThrows( ResourceNotFoundException.class, () -> {
 			sdsPartitionOps.patient().read() ;
 		});

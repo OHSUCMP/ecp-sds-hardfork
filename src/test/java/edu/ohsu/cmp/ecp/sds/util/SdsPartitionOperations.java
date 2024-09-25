@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -135,7 +136,15 @@ public class SdsPartitionOperations {
 			return SdsPartitionOperations.this.read( resourceType, resourceId ) ;
 		}
 
+		public List<T> search( ca.uhn.fhir.rest.gclient.ReferenceClientParam compartmentParameter ) {
+			return SdsPartitionOperations.this.search( resourceType, compartmentParameter ) ;
+		}
+
 		public List<T> search( Function<IQuery<IBaseBundle>, IQuery<IBaseBundle>> queryConfigurer ) {
+			return SdsPartitionOperations.this.search( resourceType, queryConfigurer ) ;
+		}
+
+		public List<T> search( BiFunction<SdsPartitionOperations, IQuery<IBaseBundle>, IQuery<IBaseBundle>> queryConfigurer ) {
 			return SdsPartitionOperations.this.search( resourceType, queryConfigurer ) ;
 		}
 
@@ -241,9 +250,17 @@ public class SdsPartitionOperations {
 		return client.read().resource( resourceType ).withId( resourceId ).execute() ;
 	}
 
+	public <T extends IBaseResource> List<T> search( Class<T> resourceType, ca.uhn.fhir.rest.gclient.ReferenceClientParam compartmentParameter ) {
+		return search( resourceType, (ops,query) -> query.where( compartmentParameter.hasId( ops.id().orElseThrow( IllegalStateException.class ).toUnqualifiedVersionless() ) ) ) ;
+	}
+
 	public <T extends IBaseResource> List<T> search( Class<T> resourceType, Function<IQuery<IBaseBundle>, IQuery<IBaseBundle>> queryConfigurer ) {
+		return search( resourceType, (ops,query) -> queryConfigurer.apply(query) ) ;
+	}
+
+	public <T extends IBaseResource> List<T> search( Class<T> resourceType, BiFunction<SdsPartitionOperations, IQuery<IBaseBundle>, IQuery<IBaseBundle>> queryConfigurer ) {
 		IQuery<IBaseBundle> query = client.search().forResource( resourceType );
-		IQuery<IBaseBundle> configuredQuery = queryConfigurer.apply( query ) ;
+		IQuery<IBaseBundle> configuredQuery = queryConfigurer.apply( this, query ) ;
 		Bundle bundle = configuredQuery.returnBundle( Bundle.class ).execute() ;
 		return unpackBundle( bundle ) ;
 	}

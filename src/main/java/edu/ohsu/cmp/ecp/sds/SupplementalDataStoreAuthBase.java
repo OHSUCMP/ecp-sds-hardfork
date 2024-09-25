@@ -57,6 +57,10 @@ public abstract class SupplementalDataStoreAuthBase implements SupplementalDataS
 
 	private IIdType authorizedUserIdFromAuthentication(Authentication authentication) {
 		OAuth2AuthenticatedPrincipal oauth2Principal = oauth2PrincipalFromAuthentication(authentication);
+		return authorizedUserIdFromOAuth2Principal( oauth2Principal );
+	}
+
+	private IIdType authorizedUserIdFromOAuth2Principal( OAuth2AuthenticatedPrincipal oauth2Principal ) {
 		if ( null == oauth2Principal )
 			return null ;
 
@@ -76,20 +80,35 @@ public abstract class SupplementalDataStoreAuthBase implements SupplementalDataS
 		if (null == contextPatient)
 			return null;
 
-		IIdType contextPatientId = idFromContextParameter( "Patient", contextPatient.toString());
+
+		IIdType contextPatientId = idFromContextParameter( contextPatient.toString() ).withResourceType( "Patient" ) ;
+		IIdType fullyQualifiedContextPatientId = fullyQualifiedContextPatientId( contextPatientId, oauth2Principal );
 
 		return new LaunchContext() {
 
 			@Override
 			public IIdType getPatient() {
-				return contextPatientId;
+				return fullyQualifiedContextPatientId;
 			}
 
 		};
 	}
 
+	private IIdType fullyQualifiedContextPatientId( IIdType contextPatientId, OAuth2AuthenticatedPrincipal oauth2Principal ) {
+		if ( contextPatientId.hasBaseUrl() )
+			return contextPatientId ;
+
+		IIdType authorizedUserId = authorizedUserIdFromOAuth2Principal( oauth2Principal );
+		if ( null == authorizedUserId )
+			throw new AuthenticationException(Msg.code(644) + "Launch Context Patient \"" + contextPatientId + "\" is missing required base url, but no authorized user id is available to provide one");
+		if ( !authorizedUserId.hasBaseUrl() )
+			throw new AuthenticationException(Msg.code(644) + "Launch Context Patient \"" + contextPatientId + "\" is missing required base url, but authorized user id \"" + authorizedUserId + "\" does not provide one");
+
+		return contextPatientId.withServerBase( authorizedUserId.getBaseUrl(), contextPatientId.getResourceType() ) ;
+	}
+
 	protected abstract IIdType idFromSubject( String subject ) ;
 
-	protected abstract IIdType idFromContextParameter( String resourceType, String contextParameterValue ) ;
+	protected abstract IIdType idFromContextParameter( String contextParameterValue ) ;
 
 }

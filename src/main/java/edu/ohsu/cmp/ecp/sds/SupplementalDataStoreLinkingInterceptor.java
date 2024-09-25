@@ -201,7 +201,7 @@ public class SupplementalDataStoreLinkingInterceptor {
 					requireClaimedLocalCompartment( linkingContext ),
 					requireClaimedNonLocalCompartment( nonLocalCompartment, linkingContext )
 					);
-				linkingContext.basisCompartmentIsAlreadyLinked() ;
+				linkingContext.nonLocalCompartmentIsAlreadyLinked( nonLocalCompartment ) ;
 			}
 		}
 
