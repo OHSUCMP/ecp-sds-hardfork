@@ -1,0 +1,20 @@
+meta {
+  name: Search Encounters (my.patient)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/Encounter?subject={{pat_id_other}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  subject: {{pat_id_other}}
+}
+
+headers {
+  Accept: application/json
+  X-Partition-Name: {{url_other}}
+}

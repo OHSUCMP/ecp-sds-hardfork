@@ -1,0 +1,24 @@
+meta {
+  name: Read Patient (my.patient)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/{{pat_id_auth}}
+  body: none
+  auth: inherit
+}
+
+headers {
+  Accept: application/json
+  X-Partition-Name: {{url_auth}}
+}
+
+body:json {
+  {
+    "id": "enc.0001",
+    "resourceType": "Encounter",
+    "subject": { "reference": "{{pat_id_auth}}" }
+  }
+}

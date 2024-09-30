@@ -1,0 +1,23 @@
+meta {
+  name: Read Patient (local)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/{{pat_id_local}}
+  body: none
+  auth: inherit
+}
+
+headers {
+  Accept: application/json
+}
+
+body:json {
+  {
+    "id": "enc.0001",
+    "resourceType": "Encounter",
+    "subject": { "reference": "{{pat_id_auth}}" }
+  }
+}

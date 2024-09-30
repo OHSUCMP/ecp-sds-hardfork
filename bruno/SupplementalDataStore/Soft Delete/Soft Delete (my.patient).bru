@@ -1,0 +1,20 @@
+meta {
+  name: Soft Delete (my.patient)
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{base_url}}/{{pat_id_auth}}?_cascade=delete
+  body: none
+  auth: inherit
+}
+
+params:query {
+  _cascade: delete
+}
+
+headers {
+  Accept: application/json
+  X-Partition-Name: {{url_auth}}
+}

@@ -1,0 +1,16 @@
+meta {
+  name: Search All Linkages
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/Linkage
+  body: none
+  auth: inherit
+}
+
+headers {
+  Accept: application/json
+  Origin: http://localhost:9999
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Soft Delete (local)
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{base_url}}/{{pat_id_local}}?_cascade=delete
+  body: none
+  auth: inherit
+}
+
+params:query {
+  _cascade: delete
+}
+
+headers {
+  Accept: application/json
+}

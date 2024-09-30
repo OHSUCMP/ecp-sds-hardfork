@@ -1,0 +1,19 @@
+meta {
+  name: Create New Local Patient
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/Patient
+  body: json
+  auth: inherit
+}
+
+headers {
+  Accept: application/json
+}
+
+body:json {
+  { "resourceType": "Patient" }
+}

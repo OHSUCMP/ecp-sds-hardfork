@@ -1,0 +1,31 @@
+meta {
+  name: Expunge (my.patient)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/{{pat_id_auth}}/$expunge
+  body: json
+  auth: inherit
+}
+
+headers {
+  X-Partition-Name: {{url_auth}}
+}
+
+body:json {
+  {
+    "resourceType": "Parameters",
+    "parameter": [
+      {
+        "name": "expungeDeletedResources",
+        "valueBoolean": true
+      },
+      {
+        "name": "_cascade",
+        "valueString": "delete"
+      }
+    ]
+  }
+}

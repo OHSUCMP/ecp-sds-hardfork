@@ -1,0 +1,51 @@
+meta {
+  name: Search My Linkages
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/Linkage?item={{pat_id_auth}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  item: {{pat_id_auth}}
+}
+
+headers {
+  Accept: application/json
+}
+
+script:post-response {
+  function unexpectedData( msg ) {
+    console.error( msg );
+    return null ;
+  }
+  
+  function extractSourcePatId( body ) {
+    if ( body.resourceType !== 'Bundle' )
+      return unexpectedData( `resource is not a Bundle` ) ;
+    if ( !body.entry )
+      return unexpectedData( `bundle has no entries` ) ;
+    for ( const entry of body.entry ) {
+      if ( !entry.resource )
+        continue ;
+      const resource = entry.resource ;
+      if ( resource.resourceType !== 'Linkage' )
+        return unexpectedData( `resource is not a Linkage` ) ;
+      for ( const item of resource.item ) {
+        if ( item.type == 'source' )
+          return item.resource.reference ;
+      }
+    }
+    return unexpectedData(`missing entry with source item`);
+  }
+  
+  const pat_id_local = extractSourcePatId(res.body) ;
+  if ( pat_id_local )
+    bru.setEnvVar( 'pat_id_local', pat_id_local ) ;
+  else
+    bru.setEnvVar( 'pat_id_local', `---not set---` ) ;
+}

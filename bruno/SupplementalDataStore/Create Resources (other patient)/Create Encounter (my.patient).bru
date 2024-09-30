@@ -1,0 +1,24 @@
+meta {
+  name: Create Encounter (my.patient)
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{base_url}}/Encounter/enc.9001
+  body: json
+  auth: inherit
+}
+
+headers {
+  Accept: application/json
+  X-Partition-Name: {{url_other}}
+}
+
+body:json {
+  {
+    "id": "enc.9001",
+    "resourceType": "Encounter",
+    "subject": { "reference": "{{pat_id_other}}" }
+  }
+}
