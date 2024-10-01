@@ -18,6 +18,7 @@ import ca.uhn.fhir.interceptor.api.Interceptor;
 import ca.uhn.fhir.interceptor.api.Pointcut;
 import ca.uhn.fhir.interceptor.model.RequestPartitionId;
 import ca.uhn.fhir.jpa.partition.IRequestPartitionHelperSvc;
+import ca.uhn.fhir.rest.api.RequestTypeEnum;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
 
@@ -69,6 +70,14 @@ public class SupplementalDataStorePartitionInterceptor {
 	public RequestPartitionId partitionIdentifyRead(RequestDetails theRequestDetails) {
 		if ( !requestPartitionHelperSvc.isResourcePartitionable(theRequestDetails.getResourceName()) )
 			return RequestPartitionId.defaultPartition() ;
+
+		/*
+		 * widen the request partition to allow searching all partitions
+		 * for resources to delete during _cascade=delete
+		 */
+		if ( RequestTypeEnum.DELETE == theRequestDetails.getRequestType() ) {
+			return RequestPartitionId.allPartitions() ;
+		}
 
 		return partition.partitionIdFromRequest( theRequestDetails ) ;
 	}
