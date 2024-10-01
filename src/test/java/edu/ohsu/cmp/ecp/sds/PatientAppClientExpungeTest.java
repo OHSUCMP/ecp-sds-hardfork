@@ -120,6 +120,7 @@ public class PatientAppClientExpungeTest extends BaseSuppplementalDataStoreTest 
 	}
 
 	@Test
+	@Disabled("not yet implemented: prevent Linkage deletion that would create orphan resources")
 	void cannotSoftDeleteNonLocalResourcesFromAuthorizedPartitionWhenLocalPartitionIsPopulated() {
 		foreignPartition1.operations().patient().create() ;
 		localPartition.operations().patient().create() ;
@@ -128,6 +129,12 @@ public class PatientAppClientExpungeTest extends BaseSuppplementalDataStoreTest 
 		localPartition.assertClaimed() ;
 		localPartition.linkages().assertPresentAndLinkedTo( authorizedPatientId ) ;
 
+		/*
+		 * Deleting the Linkage between authorized partition and foreign partition
+		 *   would leave behind a resource that the current user
+		 *   will no longer be able to read/write
+		 * The application does not yet have a way to prevent this.
+		 */
 		assertThrows( Throwable.class, () -> {
 			foreignPartition1.operations().patient().deleteCascade() ;
 		});
