@@ -53,7 +53,7 @@ import ca.uhn.fhir.util.BundleBuilder;
 		JpaStarterWebsocketDispatcherConfig.class
 		},
 	properties = {
-		"spring.datasource.url=jdbc:h2:mem:dbr4",
+		"spring.datasource.url=jdbc:h2:mem:dbr4;DB_CLOSE_DELAY=-1",
 		"hapi.fhir.fhir_version=r4"
 		}
 	)

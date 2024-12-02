@@ -1,5 +1,7 @@
 package edu.ohsu.cmp.ecp.sds;
 
+import java.util.function.Consumer;
+
 import org.hl7.fhir.instance.model.api.IIdType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -80,8 +82,14 @@ public abstract class SupplementalDataStoreAuthBase implements SupplementalDataS
 		if (null == contextPatient)
 			return null;
 
-
-		IIdType contextPatientId = idFromContextParameter( contextPatient.toString() ).withResourceType( "Patient" ) ;
+		IIdType contextPatientId =
+			coerceToResourceType(
+				idFromContextParameter( contextPatient.toString() ),
+				"Patient",
+				(actualResourceType) -> {
+					throw new AuthenticationException(Msg.code(644) + "Launch Context Patient \"" + contextPatient + "\" must be the id of a patient, but found a resource type of \"" + actualResourceType + "\"");
+				}
+			) ;
 		IIdType fullyQualifiedContextPatientId = fullyQualifiedContextPatientId( contextPatientId, oauth2Principal );
 
 		return new LaunchContext() {
@@ -92,6 +100,20 @@ public abstract class SupplementalDataStoreAuthBase implements SupplementalDataS
 			}
 
 		};
+	}
+
+	private static IIdType coerceToResourceType( IIdType id, String resourceType, Consumer<String> onResourceTypeMismatch ) {
+		if ( id.hasResourceType() ) {
+			if ( null != onResourceTypeMismatch && !resourceType.equals( id.getResourceType() ) ) {
+				onResourceTypeMismatch.accept( id.getResourceType() ) ;
+			}
+		}
+
+		if ( id.hasBaseUrl() ) {
+			return id.withServerBase( id.getBaseUrl(), resourceType ) ;
+		} else {
+			return id.withResourceType( resourceType ) ;
+		}
 	}
 
 	private IIdType fullyQualifiedContextPatientId( IIdType contextPatientId, OAuth2AuthenticatedPrincipal oauth2Principal ) {
