@@ -310,7 +310,7 @@ public class PatientAppClientTest extends BaseSuppplementalDataStoreTest {
 	
 	@Test
 	void canStoreConditionWhereSubjectIsRelatedToAuthorizedUser() {
-		IIdType authorizedRelatedPersonId = new IdType( "RelatedPerson", createTestSpecificId() ) ;
+		IIdType authorizedRelatedPersonId = new IdType( FOREIGN_PARTITION_NAME, "RelatedPerson", createTestSpecificId(), null ) ;
 		String token = mockPrincipalRegistry.register().principal( "MyRelatedPerson", authorizedRelatedPersonId.toString() ).token() ;
 		mockPermissionRegistry
 			.person( authorizedPatientId.toString() )
