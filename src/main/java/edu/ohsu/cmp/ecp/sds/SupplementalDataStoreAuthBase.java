@@ -70,7 +70,24 @@ public abstract class SupplementalDataStoreAuthBase implements SupplementalDataS
 		if (null == subject)
 			throw new AuthenticationException(Msg.code(644) + "Missing or Invalid Subject");
 
-		return idFromSubject(subject.toString());
+		IIdType subjectId = idFromSubject(subject.toString());
+
+		if ( subjectId.hasBaseUrl() && subjectId.hasResourceType() )
+			return subjectId;
+
+		Object fhirUser = oauth2Principal.getAttribute("fhirUser");
+		if (null == fhirUser)
+			throw new AuthenticationException(Msg.code(644) + "Incomplete Subject and Missing FhirUser");
+
+		IIdType fhirUserId = idFromSubject(fhirUser.toString());
+
+		if ( !fhirUserId.hasIdPart() )
+			throw new AuthenticationException(Msg.code(644) + "Incomplete Subject and Invalid FhirUser");
+
+		if ( !fhirUserId.getIdPart().equals( subjectId.getIdPart() ) )
+			throw new AuthenticationException(Msg.code(644) + "Incomplete Subject and Mismatch Between Subject And FhirUser");
+
+		return fhirUserId ;
 	}
 
 	private LaunchContext launchContextFromAuthentication(Authentication authentication) {
