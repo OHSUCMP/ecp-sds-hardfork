@@ -19,7 +19,7 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
 @Configuration
-public class SupplementalDataStorePartitioningConfig {
+public class SupplementalDataStoreConfig {
 
 	@Inject
 	SupplementalDataStoreProperties sdsProperties;
