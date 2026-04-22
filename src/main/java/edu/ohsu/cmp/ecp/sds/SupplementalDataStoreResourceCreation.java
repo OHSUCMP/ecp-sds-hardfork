@@ -1,11 +1,7 @@
 package edu.ohsu.cmp.ecp.sds;
 
-import static java.util.stream.Collectors.filtering;
-
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -13,7 +9,6 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
-import org.hl7.fhir.instance.model.api.IBaseReference;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.instance.model.api.IIdType;
 import org.springframework.stereotype.Component;
@@ -21,14 +16,10 @@ import org.springframework.stereotype.Component;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.context.RuntimeResourceDefinition;
 import ca.uhn.fhir.context.RuntimeSearchParam;
-import ca.uhn.fhir.fhirpath.IFhirPath;
-import ca.uhn.fhir.jpa.model.entity.BaseResourceIndexedSearchParam;
 import ca.uhn.fhir.jpa.searchparam.extractor.ISearchParamExtractor;
-import ca.uhn.fhir.jpa.searchparam.extractor.ISearchParamExtractor.SearchParamSet;
 import ca.uhn.fhir.jpa.searchparam.extractor.PathAndRef;
 import ca.uhn.fhir.rest.api.RestSearchParameterTypeEnum;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
-import ca.uhn.fhir.util.FhirTerser;
 import edu.ohsu.cmp.ecp.sds.base.FhirResourceComparison;
 
 @Component
@@ -41,6 +32,9 @@ public class SupplementalDataStoreResourceCreation {
 
 	@Inject
 	SupplementalDataStorePartition partition;
+
+	@Inject
+	AncillaryResources ancillaryResources;
 
 	public interface Details {
 
@@ -104,13 +98,15 @@ public class SupplementalDataStoreResourceCreation {
 			}
 		}
 
-		// return early if the resource is not in a Patient compartment
-		if ( compartmentsOfCreatedResource.isEmpty() )
+		if ( ! compartmentsOfCreatedResource.isEmpty() ) {
+			return Optional.of(new DetailsImpl(createdResource, createdInPartitionName, compartmentsOfCreatedResource));
+
+		} else if (ancillaryResources.isAncillaryResource(createdResource)) {
+			return Optional.of(new DetailsImpl(createdResource, createdInPartitionName));
+
+		} else {
 			return Optional.empty();
-
-
-		Details details = new DetailsImpl( createdResource, createdInPartitionName, compartmentsOfCreatedResource );
-		return Optional.of( details ) ;
+		}
 	}
 
 	private PatientCompartmentResourceDefinition patientCompartmentResourceDefinitionForResource( FhirContext fhirContext, IBaseResource resource ) {
@@ -198,18 +194,9 @@ public class SupplementalDataStoreResourceCreation {
 		private final Set<CompartmentDetails> compartmentDetails = new HashSet<>() ;
 		private final Set<IIdType> compartments = FhirResourceComparison.idTypes().createSet() ;
 
-		public DetailsImpl( IBaseResource createdResource, String createdInPartitionName, Set<CompartmentDetails> compartmentDetails ) {
-			if ( compartmentDetails.isEmpty() )
-				throw new IllegalArgumentException( "cannot initialize Patient Compartment Resource Creation details; resource does not belong to a compartment" ) ;
+		public DetailsImpl(IBaseResource createdResource, String createdInPartitionName) {
 			this.resourceType = createdResource.fhirType() ;
 			this.partitionName = createdInPartitionName ;
-			this.compartmentDetails.addAll( compartmentDetails );
-			compartmentDetails.stream()
-				.map( CompartmentDetails::owner )
-				.filter( Optional::isPresent )
-				.map( Optional::get )
-				.forEach( compartments::add )
-				;
 
 			IIdType resourceId = createdResource.getIdElement();
 			if ( !resourceId.hasIdPart() ) {
@@ -220,19 +207,20 @@ public class SupplementalDataStoreResourceCreation {
 				this.qualifiedResourceId = Optional.empty() ;
 			} else if ( !resourceId.hasResourceType() ) {
 				/*
-				 * IF the resource has an id BUT does not have a resource type
+				 * IF the resource has an id
+				 * BUT does not have a resource type
 				 * THEN this object cannot be initialized
 				 */
-				 throw new IllegalArgumentException( "cannot initialize Patient Compartment Resource Creation details; resource does not have a resource type" ) ;
+				 throw new IllegalArgumentException( "cannot initialize Resource Creation details; resource does not have a resource type" ) ;
 			} else if ( resourceId.hasBaseUrl() ) {
 				/*
 				 * IF the resource has an id and resource type
-				 * BUT and it has base url
+				 * AND it has base url
 				 * THEN the base url must match the partition name in which it's created
 				 */
-				String compartmentNameFromResourceId = resourceId.getBaseUrl() ;
-				if ( createdInPartitionName.equals( compartmentNameFromResourceId ) )
-					throw new IllegalArgumentException( "cannot initialize Patient Compartment Resource Creation details; partition name from resource does not match storage partition name" ) ;
+				String partitionNameFromResourceId = resourceId.getBaseUrl() ;
+				if ( ! createdInPartitionName.equals( partitionNameFromResourceId ) )
+					throw new IllegalArgumentException( "cannot initialize Resource Creation details; partition name from resource does not match storage partition name" ) ;
 				this.qualifiedResourceId = Optional.of( resourceId ) ;
 			} else {
 				/*
@@ -242,6 +230,22 @@ public class SupplementalDataStoreResourceCreation {
 				 */
 				this.qualifiedResourceId = Optional.of( resourceId.withServerBase( createdInPartitionName, resourceId.getResourceType() ) ) ;
 			}
+		}
+
+		public DetailsImpl( IBaseResource createdResource, String createdInPartitionName, Set<CompartmentDetails> compartmentDetails ) {
+			this(createdResource, createdInPartitionName);
+
+			if ( compartmentDetails.isEmpty() )
+				throw new IllegalArgumentException( "cannot initialize Patient Compartment Resource Creation details; resource does not belong to a compartment" ) ;
+
+			this.compartmentDetails.addAll( compartmentDetails );
+
+			compartmentDetails.stream()
+				.map( CompartmentDetails::owner )
+				.filter( Optional::isPresent )
+				.map( Optional::get )
+				.forEach( compartments::add )
+			;
 		}
 
 		@Override

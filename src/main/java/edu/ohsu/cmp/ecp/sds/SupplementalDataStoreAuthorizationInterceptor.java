@@ -7,6 +7,7 @@ import java.util.List;
 
 import javax.inject.Inject;
 
+import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.instance.model.api.IIdType;
 import org.springframework.stereotype.Component;
 
@@ -28,6 +29,9 @@ public class SupplementalDataStoreAuthorizationInterceptor extends Authorization
 
 	@Inject
 	SupplementalDataStoreAuth auth;
+
+	@Inject
+	AncillaryResources ancillaryResources;
 
 	private static IAuthRuleBuilder ruleBuilder() {
 		return new RuleBuilder();
@@ -134,6 +138,11 @@ public class SupplementalDataStoreAuthorizationInterceptor extends Authorization
 				.forEach( rules::add ) ;
 		}
 
+		for (Class<? extends IBaseResource> resourceType : ancillaryResources.getAncillaryResourceClasses()) {
+			inspectResource(resourceType)
+				.forEach( rules::add ) ;
+		}
+
 		return rules ;
 	}
 
@@ -179,6 +188,11 @@ public class SupplementalDataStoreAuthorizationInterceptor extends Authorization
 				.forEach( rules::add ) ;
 		}
 
+		for (Class<? extends IBaseResource> resourceType : ancillaryResources.getAncillaryResourceClasses()) {
+			manageResource(resourceType)
+				.forEach( rules::add ) ;
+		}
+
 		return rules;
 	}
 
@@ -201,6 +215,16 @@ public class SupplementalDataStoreAuthorizationInterceptor extends Authorization
 					null != patientId ? patientId : "-new-"
 				);
 		return patientRelatedOperationDesc ;
+	}
+
+	private String describeResourcePermission( String operation, Class<? extends IBaseResource> resourceType) {
+		String resourceOperationDesc =
+			String.format(
+				"%1$s %2$s",
+				operation,
+				resourceType.getSimpleName()
+			);
+		return resourceOperationDesc ;
 	}
 
 	private List<IAuthRule> managePatientCompartment( boolean isLocal, IIdType patientId ) {
@@ -286,6 +310,24 @@ public class SupplementalDataStoreAuthorizationInterceptor extends Authorization
 		return rules ;
 	}
 
+	private List<IAuthRule> manageResource(Class<? extends IBaseResource> resourceType) {
+		List<IAuthRule> rules = new ArrayList<>() ;
+
+		ruleBuilder()
+			.allow( describeResourcePermission("read", resourceType) )
+			.read().resourcesOfType(resourceType)
+			.withAnyId()
+			.andThen()
+			.allow( describeResourcePermission("write", resourceType) )
+			.write().resourcesOfType(resourceType)
+			.withAnyId()
+			.build()
+			.forEach( rules::add )
+		;
+
+		return rules ;
+	}
+
 	private List<IAuthRule> inspectPatientCompartment( boolean isLocal, IIdType patientId ) {
 		List<IAuthRule> rules = new ArrayList<>() ;
 
@@ -295,6 +337,20 @@ public class SupplementalDataStoreAuthorizationInterceptor extends Authorization
 			.build()
 			.forEach( rules::add )
 			;
+
+		return rules ;
+	}
+
+	private List<IAuthRule> inspectResource(Class<? extends IBaseResource> resourceType) {
+		List<IAuthRule> rules = new ArrayList<>() ;
+
+		ruleBuilder()
+			.allow( describeResourcePermission("read", resourceType) )
+			.read().resourcesOfType(resourceType)
+			.withAnyId()
+			.build()
+			.forEach( rules::add )
+		;
 
 		return rules ;
 	}
