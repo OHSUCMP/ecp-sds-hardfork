@@ -141,12 +141,6 @@ public class SupplementalDataStorePermissionsInterceptor {
 
 		for ( IIdType patientCompartment : details.compartments() ) {
 			if ( linkage.patientCompartmentIsClaimed( patientCompartment ) ) {
-				ourLog.warn(
-					String.format(
-						"attempt to claim \"%1$s\" was prohibited because it is already claimed",
-						patientCompartment
-					)
-				);
 				continue ;
 			}
 
