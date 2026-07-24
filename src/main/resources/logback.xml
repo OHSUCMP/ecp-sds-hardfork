@@ -1,23 +1,37 @@
 <configuration scan="true" scanPeriod="30 seconds">
+    <conversionRule
+            conversionWord="redactedMsg"
+            converterClass="edu.ohsu.cmp.ecp.util.logging.RedactingMessageConverter" />
+
+    <conversionRule
+            conversionWord="redactedEx"
+            converterClass="edu.ohsu.cmp.ecp.util.logging.RedactingThrowableProxyConverter" />
 
 	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-			<level>INFO</level>
-		</filter>
 		<encoder>
-			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%file:%line] %msg%n</pattern>
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%file:%line] %redactedMsg%n%redactedEx</pattern>
 		</encoder>
 	</appender>
 
-	<logger name="org.springframework.beans" level="INFO">
-		<appender-ref ref="STDOUT" />
-	</logger>
-	<logger name="org.springframework.core" level="INFO">
-		<appender-ref ref="STDOUT" />
-	</logger>
+	<!-- RollingFileAppender documentation: https://logback.qos.ch/manual/appenders.html#RollingFileAppender -->
+	<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>log/sds.log</file>
+
+		<!-- TimeBasedRollingPolicy documentation: https://logback.qos.ch/manual/appenders.html#TimeBasedRollingPolicy -->
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>log/archive/%d{yyyy/MM, aux}/sds.%d{yyyy-MM-dd}.log</fileNamePattern>
+			<maxHistory>10</maxHistory>
+			<totalSizeCap>1GB</totalSizeCap>
+		</rollingPolicy>
+
+		<encoder>
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%file:%line] %redactedMsg%n%redactedEx</pattern>
+		</encoder>
+	</appender>
 
 	<root level="INFO">
 		<appender-ref ref="STDOUT" />
+		<appender-ref ref="FILE" />
 	</root>
 
 </configuration>
