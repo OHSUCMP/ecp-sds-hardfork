@@ -1,7 +1,5 @@
 package edu.ohsu.cmp.ecp.security;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -17,21 +15,19 @@ import java.util.Collection;
 
 @Service
 public class ApplicationOpaqueTokenIntrospector implements OpaqueTokenIntrospector {
-	private static final Logger logger = LoggerFactory.getLogger(ApplicationOpaqueTokenIntrospector.class);
 
-	private final OpaqueTokenIntrospector introspector;
+	private final OAuth2ResourceServerProperties properties;
+	private final RestTemplate restTemplate;
 
 	public ApplicationOpaqueTokenIntrospector(OAuth2ResourceServerProperties properties) {
-		this.introspector = new NimbusOpaqueTokenIntrospector(
-			properties.getOpaquetoken().getIntrospectionUri(),
-			new RestTemplate()
-		);
-		logger.info("created introspector with uri={}", properties.getOpaquetoken().getIntrospectionUri());
+		this.properties = properties;
+		this.restTemplate = new RestTemplate();
+		restTemplate.getInterceptors().add(new IntrospectorReflexiveAuthenticationInterceptor());
 	}
 
 	@Override
 	public OAuth2AuthenticatedPrincipal introspect(String token) {
-		return withAdditionalRole("USER", introspector.introspect(token));
+		return withAdditionalRole("USER", introspector().introspect(token));
 	}
 
 	private OAuth2AuthenticatedPrincipal withAdditionalRole(String role, OAuth2AuthenticatedPrincipal principal) {
@@ -39,5 +35,13 @@ public class ApplicationOpaqueTokenIntrospector implements OpaqueTokenIntrospect
 		authorities.addAll(principal.getAuthorities());
 		authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
 		return new DefaultOAuth2AuthenticatedPrincipal(principal.getAttributes(), authorities);
+	}
+
+	private OpaqueTokenIntrospector introspector() {
+		return introspectorWithUri(properties.getOpaquetoken().getIntrospectionUri());
+	}
+
+	private OpaqueTokenIntrospector introspectorWithUri(String introspectionUri) {
+		return new NimbusOpaqueTokenIntrospector(introspectionUri, restTemplate);
 	}
 }
