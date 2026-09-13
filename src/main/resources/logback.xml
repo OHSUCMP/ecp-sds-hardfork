@@ -34,4 +34,7 @@
 		<appender-ref ref="FILE" />
 	</root>
 
+    <logger name="ca.uhn.fhir.jpa.search.cache.DatabaseSearchCacheSvcImpl" level="WARN" />
+    <logger name="ca.uhn.fhir.jpa.bulk.export.svc.BulkDataExportJobSchedulingHelperImpl" level="WARN" />
+
 </configuration>

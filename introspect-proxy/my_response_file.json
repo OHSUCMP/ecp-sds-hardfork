@@ -1,6 +1,6 @@
 {
 	"active": true,
-	"client_id": "5fa54c47-ed80-405b-a0b7-611eee5d0159",
-	"scope": "patient/* openid fhirUser",
-    "sub": "https://gw.interop.community/MCCStaging/data/Patient/5806e210-771a-4986-ae48-e88ae3e82997"
+	"client_id": "bb1423d0-2709-4175-bf5f-406a71920454",
+	"scope": "patient/* patient/*.cruds user/* user/*.cruds openid fhirUser",
+    "sub": "https://gw.interop.community/MCCOMPARE/data/Patient/smart-1288992"
 }
