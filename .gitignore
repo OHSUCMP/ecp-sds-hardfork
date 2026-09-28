@@ -172,3 +172,4 @@ Temporary Items
 ### ignore local configurations ###
 local-config/
 log/
+run_local_config.bat
