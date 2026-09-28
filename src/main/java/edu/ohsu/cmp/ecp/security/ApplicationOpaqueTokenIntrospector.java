@@ -17,14 +17,17 @@ import java.util.Collection;
 public class ApplicationOpaqueTokenIntrospector implements OpaqueTokenIntrospector {
 
 	private final OAuth2ResourceServerProperties properties;
+	private final RestTemplate restTemplate;
 
 	public ApplicationOpaqueTokenIntrospector(OAuth2ResourceServerProperties properties) {
 		this.properties = properties;
+		this.restTemplate = new RestTemplate();
+		restTemplate.getInterceptors().add(new IntrospectorReflexiveAuthenticationInterceptor());
 	}
 
 	@Override
 	public OAuth2AuthenticatedPrincipal introspect(String token) {
-		return withAdditionalRole("USER", introspectorForToken(token).introspect(token));
+		return withAdditionalRole("USER", introspector().introspect(token));
 	}
 
 	private OAuth2AuthenticatedPrincipal withAdditionalRole(String role, OAuth2AuthenticatedPrincipal principal) {
@@ -34,14 +37,11 @@ public class ApplicationOpaqueTokenIntrospector implements OpaqueTokenIntrospect
 		return new DefaultOAuth2AuthenticatedPrincipal(principal.getAttributes(), authorities);
 	}
 
-	private OpaqueTokenIntrospector introspectorForToken(String token) {
+	private OpaqueTokenIntrospector introspector() {
 		return introspectorWithUri(properties.getOpaquetoken().getIntrospectionUri());
 	}
 
 	private OpaqueTokenIntrospector introspectorWithUri(String introspectionUri) {
-		RestTemplate restTemplate = new RestTemplate();
-		restTemplate.getInterceptors().add(new IntrospectorReflexiveAuthenticationInterceptor());
-		OpaqueTokenIntrospector introspector = new NimbusOpaqueTokenIntrospector(introspectionUri, restTemplate);
-		return introspector;
+		return new NimbusOpaqueTokenIntrospector(introspectionUri, restTemplate);
 	}
 }
