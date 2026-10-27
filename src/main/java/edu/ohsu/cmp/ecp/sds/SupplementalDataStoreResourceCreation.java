@@ -5,15 +5,14 @@ import static java.util.stream.Collectors.filtering;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.inject.Inject;
 
-import org.hl7.fhir.instance.model.api.IBaseReference;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.instance.model.api.IIdType;
 import org.springframework.stereotype.Component;
@@ -21,14 +20,10 @@ import org.springframework.stereotype.Component;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.context.RuntimeResourceDefinition;
 import ca.uhn.fhir.context.RuntimeSearchParam;
-import ca.uhn.fhir.fhirpath.IFhirPath;
-import ca.uhn.fhir.jpa.model.entity.BaseResourceIndexedSearchParam;
 import ca.uhn.fhir.jpa.searchparam.extractor.ISearchParamExtractor;
-import ca.uhn.fhir.jpa.searchparam.extractor.ISearchParamExtractor.SearchParamSet;
 import ca.uhn.fhir.jpa.searchparam.extractor.PathAndRef;
 import ca.uhn.fhir.rest.api.RestSearchParameterTypeEnum;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
-import ca.uhn.fhir.util.FhirTerser;
 import edu.ohsu.cmp.ecp.sds.base.FhirResourceComparison;
 
 @Component
@@ -37,7 +32,7 @@ public class SupplementalDataStoreResourceCreation {
 	@Inject
 	ISearchParamExtractor searchParamExtractor;
 
-	private final Map<RuntimeResourceDefinition,PatientCompartmentResourceDefinition> searchParamNamesForPatientCompartment = new HashMap<>() ;
+	private final Map<RuntimeResourceDefinition,PatientCompartmentResourceDefinition> searchParamNamesForPatientCompartment = new ConcurrentHashMap<>() ;
 
 	@Inject
 	SupplementalDataStorePartition partition;
@@ -121,7 +116,7 @@ public class SupplementalDataStoreResourceCreation {
 			) ;
 	}
 
-	private class PatientCompartmentResourceDefinition {
+	private static class PatientCompartmentResourceDefinition {
 		private final Set<String> searchParamNamesForPatientCompartment = new HashSet<>() ;
 		private final RuntimeResourceDefinition sourceDef ;
 
